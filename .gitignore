@@ -1,0 +1,89 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Production builds
+dist/
+build/
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+firebase-config.json
+service-account-key.json
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.eslintcache
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Cache
+.cache/
+.parcel-cache/
+.npm
+.eslintcache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Gus auto-backup status files
+.gus-status/
+
+# Cloud SQL local config
+cloud-sql-proxy
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+
+# Database dumps
+*.sql.gz
+*.dump
