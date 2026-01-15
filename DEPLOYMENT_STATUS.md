@@ -1,7 +1,7 @@
 # 🚀 Shorts Intel Hub - Deployment Status
 
 **Date:** January 15, 2026
-**Status:** ✅ Frontend Live | ⚠️ Backend Needs Blaze Plan
+**Status:** ✅ Frontend Live | ✅ Backend Deployed | ⚠️ Database Needed
 
 ---
 
@@ -33,23 +33,32 @@
 - All UI interactions work
 - No backend API connection yet
 
+### Backend (Cloud Functions - Gen 2)
+**API URL:** https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api
+**Health Check:** https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api/health
+
+**Deployment Stats:**
+- Runtime: Node.js 20 (2nd Gen)
+- Region: us-central1
+- Memory: 512 MiB
+- Timeout: 60 seconds
+- Max Instances: 10
+- Package size: 97.83 KB
+
+**Functions Deployed:**
+1. ✅ `api` - Main HTTP API endpoint
+2. ✅ `weeklyRefreshJob` - Scheduled function (every Monday 06:00 UTC)
+
 ---
 
-## ⚠️ Backend Deployment Blocked
+## ⚠️ Database Setup Required
 
-### Issue: Firebase Plan Limitation
-**Error:** `Your project shorts-intel-hub-5c45f must be on the Blaze (pay-as-you-go) plan`
+### Current Issue
+Backend is deployed but trying to connect to PostgreSQL database at 127.0.0.1:5432 (not available in cloud environment).
 
-**Required APIs:**
-- Cloud Functions API (cloudfunctions.googleapis.com)
-- Cloud Build API (cloudbuild.googleapis.com)
-- Artifact Registry API (artifactregistry.googleapis.com)
+**Error:** `connect ECONNREFUSED 127.0.0.1:5432`
 
-**Upgrade Required:**
-https://console.firebase.google.com/project/shorts-intel-hub-5c45f/usage/details
-
-### Backend Services Ready to Deploy
-Once upgraded to Blaze plan, these will deploy:
+### Backend Services Deployed
 
 **API Endpoints:**
 - GET `/api/trends` - Fetch trends with filtering
@@ -171,23 +180,54 @@ firebase deploy
 
 ## 🛠️ To Complete Full Deployment
 
-### Step 1: Upgrade Firebase Plan
-1. Visit: https://console.firebase.google.com/project/shorts-intel-hub-5c45f/usage/details
-2. Click "Modify plan"
-3. Select "Blaze (Pay as you go)"
-4. Add billing information
-5. Confirm upgrade
+### Step 1: Set Up Cloud SQL ✅ BLAZE PLAN UPGRADED
+~~1. Visit: https://console.firebase.google.com/project/shorts-intel-hub-5c45f/usage/details~~
+~~2. Click "Modify plan"~~
+~~3. Select "Blaze (Pay as you go)"~~
+~~4. Add billing information~~
+~~5. Confirm upgrade~~
 
-### Step 2: Deploy Backend
+**✅ Completed** - Backend deployed successfully!
+
+### Step 2: Set Up Cloud SQL PostgreSQL
+Create a PostgreSQL database in Google Cloud SQL:
+
+1. **Create Cloud SQL Instance:**
 ```bash
-cd /Users/ivs/shorts-intel-hub
-firebase deploy --only functions
+gcloud sql instances create shorts-intel-hub-db \
+  --database-version=POSTGRES_15 \
+  --tier=db-f1-micro \
+  --region=us-central1 \
+  --storage-type=HDD \
+  --storage-size=10GB
 ```
 
-**Expected Output:**
+2. **Create Database:**
+```bash
+gcloud sql databases create shorts_intel_hub \
+  --instance=shorts-intel-hub-db
 ```
-✔ functions[api(us-central1)]: Successful create operation.
-Function URL (api): https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api
+
+3. **Set Root Password:**
+```bash
+gcloud sql users set-password postgres \
+  --instance=shorts-intel-hub-db \
+  --password=YOUR_SECURE_PASSWORD
+```
+
+4. **Update Backend Environment:**
+Edit `backend/functions/src/db/connection.js` to use Cloud SQL connection string:
+```javascript
+// Use Cloud SQL connector instead of local connection
+const connectionName = 'shorts-intel-hub-5c45f:us-central1:shorts-intel-hub-db';
+```
+
+5. **Run Schema and Seed Data:**
+```bash
+# Connect via Cloud SQL Proxy
+cloud-sql-proxy shorts-intel-hub-5c45f:us-central1:shorts-intel-hub-db &
+psql -h 127.0.0.1 -U postgres -d shorts_intel_hub -f backend/database/schema.sql
+./backend/database/seed.sh
 ```
 
 ### Step 3: Update Frontend API Config
@@ -197,17 +237,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
   'https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api';
 ```
 
-### Step 4: Redeploy Frontend
+### Step 4: Redeploy Backend with Cloud SQL
 ```bash
-cd frontend
-npm run build
-firebase deploy --only hosting
+firebase deploy --only functions
 ```
 
-### Step 5: Verify Deployment
+### Step 5: Verify Full Stack
 ```bash
-# Test health endpoint
+# Test health endpoint (should work now)
 curl https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api/health
+
+# Test stats endpoint (requires database)
+curl "https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api/api/stats?market=JP&targetDemo=all"
 
 # Test frontend
 open https://shorts-intel-hub-5c45f.web.app
@@ -286,9 +327,10 @@ https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api/health
 - [x] API endpoints functional
 - [x] Mock data prepared (250+ trends)
 - [x] Firebase configuration complete
-- [ ] **BLOCKED:** Firebase Blaze plan upgrade
-- [ ] Backend deployed to Cloud Functions
-- [ ] Database seeded (PostgreSQL needs setup)
+- [x] ✅ Firebase Blaze plan upgraded
+- [x] ✅ Backend deployed to Cloud Functions (Node.js 20)
+- [ ] **NEXT:** Cloud SQL PostgreSQL setup needed
+- [ ] Database seeded with 250+ mock trends
 - [ ] Full integration tested on cloud
 
 ---
@@ -331,5 +373,35 @@ https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api/health
 
 ---
 
+---
+
+## 📊 Current Deployment Summary
+
+**✅ What's Working:**
+- Frontend: Live at https://shorts-intel-hub-5c45f.web.app
+- Backend: Deployed at https://us-central1-shorts-intel-hub-5c45f.cloudfunctions.net/api
+- Health Check: ✅ Responding successfully
+- Infrastructure: All Cloud Functions APIs enabled
+
+**⚠️ What Needs Attention:**
+- Database: Cloud SQL PostgreSQL needs to be created and configured
+- API Endpoints: Will work once database is connected
+- Gemini Integration: Ready but needs database for storing results
+
+**🎯 For Partner Demos Today:**
+- Use the live frontend for UI/UX review
+- Show complete dashboard design
+- Discuss data integration requirements
+- Explain AI processing workflow (Gemini normalization)
+
+**🚀 For Full Functionality:**
+- Set up Cloud SQL (see Step 2 above)
+- Connect backend to database
+- Seed with 250+ mock trends
+- Test all API endpoints
+
+---
+
 **🎉 Frontend is live and ready for partner demos!**
-**🚀 Backend deployment available within minutes of Blaze plan upgrade!**
+**🚀 Backend is deployed and waiting for database connection!**
+**⚡ Cloud SQL setup is the final step for full Alpha MVP!**

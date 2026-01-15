@@ -14,14 +14,15 @@ import { initializeDatabase } from './db/connection.js';
 import 'dotenv/config';
 import { weeklyRefresh } from './scheduler/refresh.js';
 
+// Initialize Express app
+const app = express();
+
 // Initialize database connection (optional for Alpha MVP)
-await initializeDatabase().catch(err => {
+// Done after app creation to avoid top-level await issues
+initializeDatabase().catch(err => {
   console.warn('⚠️  Database not available - API will use fallback responses');
   console.warn('To enable database, ensure PostgreSQL is running on port 5432');
 });
-
-// Initialize Express app
-const app = express();
 
 // Middleware
 app.use(helmet());
@@ -51,19 +52,22 @@ app.get('/health', (req, res) => {
 // Setup API routes
 setupRoutes(app);
 
-// For local development server
-if (process.env.NODE_ENV !== 'production') {
+// For local development server only (not during Firebase deployment analysis)
+if (process.env.NODE_ENV !== 'production' && !process.env.FUNCTIONS_EMULATOR) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`
+  // Only start server if explicitly running dev script
+  if (process.argv[1]?.includes('index.js')) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`
 🚀 Shorts Intel Hub API
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Server: http://localhost:${PORT}
 Health: http://localhost:${PORT}/health
 API:    http://localhost:${PORT}/api
 ━━━━━━━━━━━━━━━━━━━━━━━━
-    `);
-  });
+      `);
+    });
+  }
 }
 
 // Error handling
