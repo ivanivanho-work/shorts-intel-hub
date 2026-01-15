@@ -8,6 +8,7 @@
     "node": "18"
   },
   "scripts": {
+    "dev": "node src/index.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
