@@ -14,9 +14,10 @@ import { initializeDatabase } from './db/connection.js';
 import 'dotenv/config';
 import { weeklyRefresh } from './scheduler/refresh.js';
 
-// Initialize database connection
+// Initialize database connection (optional for Alpha MVP)
 await initializeDatabase().catch(err => {
-  console.error('Database initialization failed:', err);
+  console.warn('⚠️  Database not available - API will use fallback responses');
+  console.warn('To enable database, ensure PostgreSQL is running on port 5432');
 });
 
 // Initialize Express app

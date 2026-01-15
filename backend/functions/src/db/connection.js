@@ -5,7 +5,6 @@
  */
 
 import pg from 'pg';
-import { Connector } from '@google-cloud/sql-connector';
 
 const { Pool } = pg;
 
@@ -23,22 +22,12 @@ export async function initializeDatabase() {
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (isProduction) {
-    // Use Cloud SQL Connector for production
-    connector = new Connector();
-    const clientOpts = await connector.getOptions({
-      instanceConnectionName: process.env.CLOUD_SQL_CONNECTION_NAME,
-      authType: 'IAM'
-    });
+    // TODO: Use Cloud SQL Connector for production deployment
+    // For now, use same config as development
+    console.warn('Running in production mode with local DB config');
+  }
 
-    pool = new Pool({
-      ...clientOpts,
-      user: process.env.DB_USER || 'postgres',
-      database: process.env.DB_NAME || 'shorts_intel_hub',
-      max: 5,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000
-    });
-  } else {
+  {
     // Use direct connection for local development (via Cloud SQL Proxy)
     pool = new Pool({
       host: process.env.DB_HOST || '127.0.0.1',
