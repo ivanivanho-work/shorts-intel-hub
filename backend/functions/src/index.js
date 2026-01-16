@@ -87,7 +87,13 @@ export const api = onRequest(
     region: 'us-central1',
     memory: '512MiB',
     timeoutSeconds: 60,
-    maxInstances: 10
+    maxInstances: 10,
+    secrets: [],
+    // Cloud SQL connection
+    vpc: {
+      connector: null, // Automatically managed
+      egressSettings: 'PRIVATE_RANGES_ONLY'
+    }
   },
   app
 );

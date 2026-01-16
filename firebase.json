@@ -26,7 +26,8 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log"
-      ]
+      ],
+      "runtime": "nodejs20"
     }
   ]
 }

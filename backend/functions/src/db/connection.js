@@ -19,16 +19,23 @@ export async function initializeDatabase() {
     return pool;
   }
 
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.FUNCTION_NAME;
 
   if (isProduction) {
-    // TODO: Use Cloud SQL Connector for production deployment
-    // For now, use same config as development
-    console.warn('Running in production mode with local DB config');
-  }
-
-  {
-    // Use direct connection for local development (via Cloud SQL Proxy)
+    // Cloud Functions: Connect via Unix socket
+    const dbSocketPath = process.env.DB_SOCKET_PATH || '/cloudsql';
+    pool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME || 'shorts_intel_hub',
+      host: `${dbSocketPath}/shorts-intel-hub-5c45f:us-central1:shorts-intel-hub-db`,
+      max: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    });
+    console.log('🔌 Using Cloud SQL Unix socket connection');
+  } else {
+    // Local development: Connect via Cloud SQL Proxy or local PostgreSQL
     pool = new Pool({
       host: process.env.DB_HOST || '127.0.0.1',
       port: parseInt(process.env.DB_PORT || '5432'),
@@ -39,6 +46,7 @@ export async function initializeDatabase() {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000
     });
+    console.log('🔌 Using local/proxy PostgreSQL connection');
   }
 
   // Test connection
