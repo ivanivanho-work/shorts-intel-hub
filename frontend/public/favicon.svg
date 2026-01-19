@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- YouTube red background -->
+  <rect width="48" height="48" rx="8" fill="#FF0000"/>
+  <!-- White play button triangle -->
+  <path d="M19 14 L19 34 L33 24 Z" fill="#FFFFFF"/>
+</svg>
