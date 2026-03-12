@@ -10,6 +10,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { setupRoutes } from './api/implemented-routes.js';
+import { setupMatchingRoutes } from './api/topic-matching-routes.js';
+import { setupRankingRoutes } from './api/ranking-routes.js';
 import { initializeDatabase } from './db/connection.js';
 import 'dotenv/config';
 import { weeklyRefresh } from './scheduler/refresh.js';
@@ -51,6 +53,8 @@ app.get('/health', (req, res) => {
 
 // Setup API routes
 setupRoutes(app);
+setupMatchingRoutes(app);
+setupRankingRoutes(app);
 
 // For local development server only (not during Firebase deployment analysis)
 if (process.env.NODE_ENV !== 'production' && !process.env.FUNCTIONS_EMULATOR) {

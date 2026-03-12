@@ -10,6 +10,7 @@ import * as topicsDb from '../db/topics.js';
 import * as rankingDb from '../db/ranking.js';
 import { normalizeTopic, generateEmbedding } from '../services/gemini-service.js';
 import { checkForDuplicates } from '../services/deduplication.js';
+import { handleUpload } from '../ingestion/upload.js';
 
 // Rate limiters
 const standardLimiter = rateLimit({
@@ -22,6 +23,12 @@ const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
   message: 'Upload limit reached, please try again later'
+});
+
+const fileUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: 'File upload limit reached (10/hour), please try again later'
 });
 
 const validate = (req, res, next) => {
@@ -374,6 +381,48 @@ export function setupRoutes(app) {
 
       } catch (error) {
         console.error('Error processing agency upload:', error);
+        next(error);
+      }
+    }
+  );
+
+  // ============================================================================
+  // FILE UPLOAD ENDPOINT
+  // ============================================================================
+
+  /**
+   * POST /api/upload
+   * Upload data file (Internal or External source)
+   * Accepts JSON or CSV content with source track classification
+   */
+  router.post(
+    '/upload',
+    fileUploadLimiter,
+    [
+      body('fileContent').isString().withMessage('fileContent must be a string'),
+      body('fileName').isString().isLength({ min: 1 }).withMessage('fileName is required'),
+      body('fileType').isIn(['csv', 'json']).withMessage('fileType must be "csv" or "json"'),
+      body('sourceTrack').isIn(['internal', 'external']).withMessage('sourceTrack must be "internal" or "external"'),
+      body('market').isIn(['JP', 'KR', 'IN', 'ID', 'AUNZ']).withMessage('market must be one of: JP, KR, IN, ID, AUNZ'),
+      validate
+    ],
+    async (req, res, next) => {
+      try {
+        const { fileContent, fileName, fileType, sourceTrack, market } = req.body;
+
+        const result = await handleUpload({
+          fileContent,
+          fileName,
+          fileType,
+          sourceTrack,
+          market
+        });
+
+        const statusCode = result.success ? 200 : 400;
+        res.status(statusCode).json(result);
+
+      } catch (error) {
+        console.error('Error processing file upload:', error);
         next(error);
       }
     }

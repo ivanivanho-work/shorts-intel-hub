@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, Database, GitMerge, Globe } from 'lucide-react';
 
-interface ArchivedTrend {
+interface ArchivedTopic {
   id: string;
   topicName: string;
   description: string;
-  targetDemo: string;
-  rank: number;
   score: number;
-  source: string;
+  rank: number;
+  matchCount?: number;
+  confidence?: number;
 }
 
 interface WeeklyArchive {
@@ -16,165 +16,112 @@ interface WeeklyArchive {
   weekStart: string;
   weekEnd: string;
   market: string;
-  trends: ArchivedTrend[];
+  internalTrack: ArchivedTopic[];
+  centerTrack: ArchivedTopic[];
+  externalTrack: ArchivedTopic[];
 }
 
-// Mock archived data
+// Mock archived data with three-track structure
 const mockArchives: Record<string, WeeklyArchive[]> = {
   JP: [
     {
-      weekLabel: 'Week of January 6-12, 2026',
-      weekStart: '2026-01-06',
-      weekEnd: '2026-01-12',
+      weekLabel: 'Week of March 3-9, 2026',
+      weekStart: '2026-03-03',
+      weekEnd: '2026-03-09',
       market: 'Japan',
-      trends: [
-        {
-          id: 'arch-jp-1',
-          topicName: 'New Year Temple Visits',
-          description: 'Traditional first shrine visits of the year trending across all demographics.',
-          targetDemo: 'All 18-44',
-          rank: 1,
-          score: 97,
-          source: 'Nyan Cat',
-        },
-        {
-          id: 'arch-jp-2',
-          topicName: 'Winter Sale Hauls',
-          description: 'Department store winter sale shopping hauls gaining traction.',
-          targetDemo: 'Females 18-34',
-          rank: 2,
-          score: 94,
-          source: 'Agency',
-        },
-        {
-          id: 'arch-jp-3',
-          topicName: 'Osechi Cooking Tutorial',
-          description: 'Traditional New Year food preparation videos.',
-          targetDemo: 'Females 25-44',
-          rank: 3,
-          score: 89,
-          source: 'Search',
-        },
+      internalTrack: [
+        { id: 'a-jp-i1', topicName: 'Anime Dance Challenge', description: 'Users recreate iconic anime dance sequences with original choreography', score: 92, rank: 1 },
+        { id: 'a-jp-i2', topicName: 'Konbini Mukbang', description: 'Convenience store food reviews and taste tests from Japanese konbini', score: 85, rank: 2 },
+      ],
+      centerTrack: [
+        { id: 'a-jp-m1', topicName: 'Anime Opening Recreations', description: 'Matched: Internal anime dance + External live-action anime recreations', score: 95, rank: 1, matchCount: 2, confidence: 0.92 },
+      ],
+      externalTrack: [
+        { id: 'a-jp-e1', topicName: 'Kawaii Fashion Lookbooks', description: 'Cute fashion styling videos featuring Japanese street fashion trends', score: 78, rank: 1 },
+        { id: 'a-jp-e2', topicName: 'Japanese Convenience Store Hauls', description: 'Tourists and locals reviewing unique Japanese convenience store finds', score: 72, rank: 2 },
       ],
     },
     {
-      weekLabel: 'Week of December 30, 2025 - January 5, 2026',
-      weekStart: '2025-12-30',
-      weekEnd: '2026-01-05',
+      weekLabel: 'Week of February 24 - March 2, 2026',
+      weekStart: '2026-02-24',
+      weekEnd: '2026-03-02',
       market: 'Japan',
-      trends: [
-        {
-          id: 'arch-jp-4',
-          topicName: 'Year-End Countdown Events',
-          description: 'Live countdown celebrations from major cities.',
-          targetDemo: 'All 18-34',
-          rank: 1,
-          score: 99,
-          source: 'Nyan Cat',
-        },
-        {
-          id: 'arch-jp-5',
-          topicName: '2025 Recap Videos',
-          description: 'Personal year-in-review montages trending.',
-          targetDemo: 'All 18-44',
-          rank: 2,
-          score: 95,
-          source: 'Search',
-        },
-        {
-          id: 'arch-jp-6',
-          topicName: 'Kohaku Uta Gassen Reactions',
-          description: 'Reactions to NHK\'s annual music show.',
-          targetDemo: 'All 25-54',
-          rank: 3,
-          score: 91,
-          source: 'Music',
-        },
+      internalTrack: [
+        { id: 'a-jp-i3', topicName: 'Tokyo Street Fashion', description: 'Harajuku and Shibuya street style showcases', score: 88, rank: 1 },
+      ],
+      centerTrack: [
+        { id: 'a-jp-m2', topicName: 'Japanese Street Style', description: 'Matched: Internal Tokyo fashion + External Harajuku lookbooks', score: 91, rank: 1, matchCount: 3, confidence: 0.89 },
+      ],
+      externalTrack: [
+        { id: 'a-jp-e3', topicName: 'Cherry Blossom Forecast', description: 'Early sakura predictions and best viewing spots for 2026', score: 80, rank: 1 },
       ],
     },
   ],
   KR: [
     {
-      weekLabel: 'Week of January 6-12, 2026',
-      weekStart: '2026-01-06',
-      weekEnd: '2026-01-12',
+      weekLabel: 'Week of March 3-9, 2026',
+      weekStart: '2026-03-03',
+      weekEnd: '2026-03-09',
       market: 'South Korea',
-      trends: [
-        {
-          id: 'arch-kr-1',
-          topicName: 'Lunar New Year Prep',
-          description: 'Traditional Seollal preparation and gift ideas.',
-          targetDemo: 'All 25-44',
-          rank: 1,
-          score: 96,
-          source: 'Search',
-        },
-        {
-          id: 'arch-kr-2',
-          topicName: 'K-Drama Winter Fashion',
-          description: 'Fashion inspired by hit winter dramas.',
-          targetDemo: 'Females 18-34',
-          rank: 2,
-          score: 93,
-          source: 'Agency',
-        },
+      internalTrack: [
+        { id: 'a-kr-i1', topicName: 'K-Pop Dance Cover', description: 'Fan dance covers of latest K-Pop group choreography', score: 94, rank: 1 },
+      ],
+      centerTrack: [
+        { id: 'a-kr-m1', topicName: 'K-Pop Choreography', description: 'Matched: Internal dance covers + External dance tutorials', score: 97, rank: 1, matchCount: 2, confidence: 0.95 },
+      ],
+      externalTrack: [
+        { id: 'a-kr-e1', topicName: 'Glass Skin Tutorial', description: 'Achieving the Korean glass skin look with skincare and makeup', score: 82, rank: 1 },
       ],
     },
   ],
   IN: [
     {
-      weekLabel: 'Week of January 6-12, 2026',
-      weekStart: '2026-01-06',
-      weekEnd: '2026-01-12',
+      weekLabel: 'Week of March 3-9, 2026',
+      weekStart: '2026-03-03',
+      weekEnd: '2026-03-09',
       market: 'India',
-      trends: [
-        {
-          id: 'arch-in-1',
-          topicName: 'Republic Day Preparations',
-          description: 'Patriotic content leading up to Republic Day celebrations.',
-          targetDemo: 'All 18-44',
-          rank: 1,
-          score: 95,
-          source: 'Search',
-        },
+      internalTrack: [
+        { id: 'a-in-i1', topicName: 'Bollywood Transition Reels', description: 'Creative outfit transitions synced to Bollywood music', score: 90, rank: 1 },
+      ],
+      centerTrack: [
+        { id: 'a-in-m1', topicName: 'Bollywood Dance Content', description: 'Matched: Internal transitions + External dance challenges', score: 93, rank: 1, matchCount: 2, confidence: 0.91 },
+      ],
+      externalTrack: [
+        { id: 'a-in-e1', topicName: 'Indian Wedding Content', description: 'Lavish Indian wedding ceremonies and celebration highlights', score: 76, rank: 1 },
       ],
     },
   ],
   ID: [
     {
-      weekLabel: 'Week of January 6-12, 2026',
-      weekStart: '2026-01-06',
-      weekEnd: '2026-01-12',
+      weekLabel: 'Week of March 3-9, 2026',
+      weekStart: '2026-03-03',
+      weekEnd: '2026-03-09',
       market: 'Indonesia',
-      trends: [
-        {
-          id: 'arch-id-1',
-          topicName: 'New Year Beach Getaways',
-          description: 'Beach vacation content trending post-holidays.',
-          targetDemo: 'All 18-34',
-          rank: 1,
-          score: 92,
-          source: 'Nyan Cat',
-        },
+      internalTrack: [
+        { id: 'a-id-i1', topicName: 'Indonesian Mukbang', description: 'Local food reviews featuring Indonesian cuisine', score: 86, rank: 1 },
+      ],
+      centerTrack: [
+        { id: 'a-id-m1', topicName: 'Indonesian Food Content', description: 'Matched: Internal mukbang + External street food tours', score: 89, rank: 1, matchCount: 2, confidence: 0.88 },
+      ],
+      externalTrack: [
+        { id: 'a-id-e1', topicName: 'Bali Travel Content', description: 'Travel vlogs and hidden gem discoveries in Bali', score: 74, rank: 1 },
       ],
     },
   ],
   AUNZ: [
     {
-      weekLabel: 'Week of January 6-12, 2026',
-      weekStart: '2026-01-06',
-      weekEnd: '2026-01-12',
+      weekLabel: 'Week of March 3-9, 2026',
+      weekStart: '2026-03-03',
+      weekEnd: '2026-03-09',
       market: 'Australia & New Zealand',
-      trends: [
-        {
-          id: 'arch-aunz-1',
-          topicName: 'Australia Day Planning',
-          description: 'BBQ recipes and celebration ideas gaining momentum.',
-          targetDemo: 'All 25-44',
-          rank: 1,
-          score: 88,
-          source: 'Search',
-        },
+      internalTrack: [
+        { id: 'a-aunz-i1', topicName: 'Aussie Slang Challenge', description: 'Testing knowledge of Australian slang and expressions', score: 83, rank: 1 },
+      ],
+      centerTrack: [
+        { id: 'a-aunz-m1', topicName: 'Australian Culture Content', description: 'Matched: Internal slang challenges + External accent challenges', score: 87, rank: 1, matchCount: 2, confidence: 0.86 },
+      ],
+      externalTrack: [
+        { id: 'a-aunz-e1', topicName: 'NZ Nature Exploration', description: 'Hiking and nature content from New Zealand landscapes', score: 71, rank: 1 },
       ],
     },
   ],
@@ -182,6 +129,56 @@ const mockArchives: Record<string, WeeklyArchive[]> = {
 
 interface ArchiveViewProps {
   market: string;
+}
+
+function TrackColumn({
+  icon: Icon,
+  title,
+  accentColor,
+  topics
+}: {
+  icon: React.ElementType;
+  title: string;
+  accentColor: string;
+  topics: ArchivedTopic[];
+}) {
+  return (
+    <div>
+      <div className={`flex items-center gap-2 mb-3 pb-2 border-b-2 ${accentColor}`}>
+        <Icon className="size-4 text-muted-foreground" />
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{topics.length}</span>
+      </div>
+      <div className="space-y-2">
+        {topics.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-3">No topics</p>
+        ) : (
+          topics.map((topic) => (
+            <div key={topic.id} className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <span className="text-sm font-medium text-foreground">{topic.topicName}</span>
+                <span className="text-sm font-bold text-foreground flex-shrink-0">{topic.score}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">{topic.description}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">#{topic.rank}</span>
+                {topic.matchCount && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                    {topic.matchCount} matches
+                  </span>
+                )}
+                {topic.confidence && (
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(topic.confidence * 100)}% conf
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ArchiveView({ market }: ArchiveViewProps) {
@@ -199,21 +196,6 @@ export function ArchiveView({ market }: ArchiveViewProps) {
     setExpandedWeeks(newExpanded);
   };
 
-  const getSourceBadgeColor = (source: string) => {
-    switch (source) {
-      case 'Search':
-        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-      case 'Nyan Cat':
-        return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-      case 'Agency':
-        return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
-      case 'Music':
-        return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
-      default:
-        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
-    }
-  };
-
   return (
     <div>
       {/* Info */}
@@ -222,7 +204,7 @@ export function ArchiveView({ market }: ArchiveViewProps) {
         <div>
           <h4 className="text-foreground font-medium mb-1">Historical Archive</h4>
           <p className="text-muted-foreground text-sm">
-            Browse past weeks' top topics and trends. Data is archived weekly and retained for 12 weeks.
+            Browse past weeks' analysis results across all three tracks. Data is archived weekly and retained for 12 weeks.
           </p>
         </div>
       </div>
@@ -237,7 +219,8 @@ export function ArchiveView({ market }: ArchiveViewProps) {
         <div className="space-y-4">
           {archives.map((archive) => {
             const isExpanded = expandedWeeks.has(archive.weekLabel);
-            
+            const totalTopics = archive.internalTrack.length + archive.centerTrack.length + archive.externalTrack.length;
+
             return (
               <div key={archive.weekLabel} className="bg-card border border-border rounded-lg overflow-hidden">
                 {/* Week Header */}
@@ -249,7 +232,9 @@ export function ArchiveView({ market }: ArchiveViewProps) {
                     <Calendar className="size-5 text-muted-foreground" />
                     <div className="text-left">
                       <h3 className="text-foreground font-medium">{archive.weekLabel}</h3>
-                      <p className="text-sm text-muted-foreground">{archive.trends.length} top trends</p>
+                      <p className="text-sm text-muted-foreground">
+                        {totalTopics} topics — {archive.internalTrack.length} internal, {archive.centerTrack.length} matched, {archive.externalTrack.length} external
+                      </p>
                     </div>
                   </div>
                   {isExpanded ? (
@@ -259,47 +244,28 @@ export function ArchiveView({ market }: ArchiveViewProps) {
                   )}
                 </button>
 
-                {/* Week Content */}
+                {/* Week Content - Three Track Grid */}
                 {isExpanded && (
-                  <div className="border-t border-border">
-                    <div className="p-5 space-y-3">
-                      {archive.trends.map((trend) => (
-                        <div
-                          key={trend.id}
-                          className="p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                        >
-                          <div className="flex items-start gap-4">
-                            {/* Rank */}
-                            <div className="flex-shrink-0">
-                              <div className="size-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                                #{trend.rank}
-                              </div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 mb-2">
-                                <h4 className="text-foreground font-medium">{trend.topicName}</h4>
-                                <div className="text-right flex-shrink-0">
-                                  <div className="text-xl font-bold text-foreground">{trend.score}</div>
-                                  <div className="text-xs text-muted-foreground">Score</div>
-                                </div>
-                              </div>
-
-                              <p className="text-foreground text-sm mb-3">{trend.description}</p>
-
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className={`px-2 py-1 rounded-full text-sm ${getSourceBadgeColor(trend.source)}`}>
-                                  {trend.source}
-                                </span>
-                                <span className="px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-sm">
-                                  {trend.targetDemo}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                  <div className="border-t border-border p-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <TrackColumn
+                        icon={Database}
+                        title="Internal (Nyan Cat)"
+                        accentColor="border-purple-500"
+                        topics={archive.internalTrack}
+                      />
+                      <TrackColumn
+                        icon={GitMerge}
+                        title="Cross-Source Matched"
+                        accentColor="border-yellow-500"
+                        topics={archive.centerTrack}
+                      />
+                      <TrackColumn
+                        icon={Globe}
+                        title="External (Vayner)"
+                        accentColor="border-blue-500"
+                        topics={archive.externalTrack}
+                      />
                     </div>
                   </div>
                 )}

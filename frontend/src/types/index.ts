@@ -180,7 +180,7 @@ export interface TrendFilters {
 // VIEW STATE TYPES
 // ============================================================================
 
-export type TabView = 'summary' | 'deepdive' | 'scoring' | 'archive';
+export type TabView = 'three-track' | 'scoring' | 'archive';
 export type AppView = 'dashboard' | 'upload';
 
 // ============================================================================
@@ -231,4 +231,107 @@ export const SOURCE_COLORS = {
   'Nyan Cat': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   Agency: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   Music: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+} as const;
+
+// ============================================================================
+// TOPIC MATCHING TYPES
+// ============================================================================
+
+export type DataTrack = 'internal' | 'external' | 'matched' | 'unprocessed';
+export type MatchMethod = 'embedding' | 'llm';
+export type MatchClassification = 'SAME_TOPIC' | 'RELATED_THEME' | 'DIFFERENT';
+export type ConfidenceLevel = 'strong' | 'likely' | 'possible';
+
+export interface MatchedSource {
+  topicId: string;
+  topicName: string;
+  topicDescription?: string;
+  sourceType: 'internal' | 'external';
+  matchMethod: MatchMethod;
+  similarityScore?: number;
+  llmConfidence?: number;
+  llmClassification?: MatchClassification;
+  llmExplanation?: string;
+}
+
+export interface ConsolidatedTopic {
+  consolidatedId: string;
+  consolidatedName: string;
+  consolidatedDescription?: string;
+  matchCount: number;
+  internalCount: number;
+  externalCount: number;
+  avgConfidence: number;
+  rankScore?: number;
+  rankPosition?: number;
+  market: string;
+  status: 'active' | 'archived' | 'approved';
+  matches: MatchedSource[];
+  createdAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+}
+
+export interface RelatedTopic {
+  relationId: string;
+  relatedTopicId: string;
+  relatedTopicName?: string;
+  relationship: 'SAME_TOPIC' | 'RELATED_THEME';
+  confidence: number;
+}
+
+export interface TrackTopic extends Trend {
+  dataTrack: DataTrack;
+  relatedTopics: RelatedTopic[];
+}
+
+export interface ThreeTrackData {
+  internalTrack: TrackTopic[];
+  centerTrack: ConsolidatedTopic[];
+  externalTrack: TrackTopic[];
+}
+
+export interface MatchingRun {
+  runId: string;
+  market: string;
+  startedAt: string;
+  completedAt?: string;
+  internalTopicCount: number;
+  externalTopicCount: number;
+  totalPairsAnalyzed: number;
+  stage1Matches: number;
+  stage2Matches: number;
+  relatedFlags: number;
+  matchedTopicsCount: number;
+  internalOnlyCount: number;
+  externalOnlyCount: number;
+  status: 'running' | 'completed' | 'failed';
+  processingTimeMs?: number;
+}
+
+export interface MatchingStats {
+  totalMatched: number;
+  totalInternal: number;
+  totalExternal: number;
+  lastRunAt?: string;
+  avgConfidence: number;
+}
+
+// Helper to get confidence level from score
+export function getConfidenceLevel(avgConfidence: number): ConfidenceLevel {
+  if (avgConfidence >= 8) return 'strong';
+  if (avgConfidence >= 5) return 'likely';
+  return 'possible';
+}
+
+export const CONFIDENCE_COLORS = {
+  strong: 'bg-green-500/20 text-green-400 border-green-500/30',
+  likely: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  possible: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+} as const;
+
+export const CONFIDENCE_LABELS = {
+  strong: 'Strong Match',
+  likely: 'Likely Match',
+  possible: 'Possible Connection',
 } as const;

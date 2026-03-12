@@ -277,6 +277,118 @@ export function isAuthenticated(): boolean {
 }
 
 // ============================================================================
+// TOPIC MATCHING API
+// ============================================================================
+
+export interface ThreeTrackResponse {
+  internalTrack: any[];
+  centerTrack: any[];
+  externalTrack: any[];
+  lastRun: any;
+  market: string;
+}
+
+export interface MatchingRunResponse {
+  runId: string;
+  status: string;
+  market: string;
+  internalTopicCount: number;
+  externalTopicCount: number;
+}
+
+export interface MatchingStatsResponse {
+  totalMatched: number;
+  totalInternal: number;
+  totalExternal: number;
+  lastRunAt: string | null;
+  avgConfidence: number;
+  market: string;
+}
+
+/**
+ * Trigger a topic matching run for a market
+ */
+export async function triggerMatchingRun(market: string): Promise<MatchingRunResponse> {
+  return apiFetch<MatchingRunResponse>('/matching/run', {
+    method: 'POST',
+    body: JSON.stringify({ market }),
+  });
+}
+
+/**
+ * Get three-track results for a market
+ */
+export async function getThreeTrackResults(market: string): Promise<ThreeTrackResponse> {
+  return authenticatedFetch<ThreeTrackResponse>(`/matching/results/${market}`);
+}
+
+/**
+ * Get matching statistics for a market
+ */
+export async function getMatchingStats(market: string): Promise<MatchingStatsResponse> {
+  return authenticatedFetch<MatchingStatsResponse>(`/matching/stats/${market}`);
+}
+
+/**
+ * Get matching run history for a market
+ */
+export async function getMatchingRuns(market: string): Promise<{ runs: any[]; market: string }> {
+  return authenticatedFetch<{ runs: any[]; market: string }>(`/matching/runs/${market}`);
+}
+
+/**
+ * Get details for a single consolidated topic
+ */
+export async function getConsolidatedTopic(consolidatedId: string): Promise<any> {
+  return authenticatedFetch<any>(`/matching/consolidated/${consolidatedId}`);
+}
+
+// ============================================================================
+// RANKING API
+// ============================================================================
+
+export interface RankingRunResponse {
+  success: boolean;
+  market: string;
+  internalRanked: number;
+  externalRanked: number;
+  matchedRanked: number;
+}
+
+/**
+ * Trigger ranking for all three tracks in a market
+ */
+export async function triggerRankingRun(
+  market: string,
+  optionalBoosters?: { tools: boolean; geo: boolean }
+): Promise<RankingRunResponse> {
+  return apiFetch<RankingRunResponse>('/ranking/run', {
+    method: 'POST',
+    body: JSON.stringify({ market, optionalBoosters }),
+  });
+}
+
+/**
+ * Run Full Analysis: Topic Matching → Ranking (chained)
+ * This is the one-click pipeline trigger
+ */
+export async function runFullAnalysis(
+  market: string,
+  optionalBoosters?: { tools: boolean; geo: boolean }
+): Promise<{ matching: MatchingRunResponse; ranking: RankingRunResponse }> {
+  // Step 1: Run topic matching
+  const matching = await triggerMatchingRun(market);
+
+  // Step 2: Wait briefly for matching to process (it runs async on backend)
+  await new Promise(resolve => setTimeout(resolve, 3000));
+
+  // Step 3: Run ranking on the results
+  const ranking = await triggerRankingRun(market, optionalBoosters);
+
+  return { matching, ranking };
+}
+
+// ============================================================================
 // EXPORT ALL
 // ============================================================================
 
@@ -291,4 +403,11 @@ export default {
   login,
   logout,
   isAuthenticated,
+  triggerMatchingRun,
+  getThreeTrackResults,
+  getMatchingStats,
+  getMatchingRuns,
+  getConsolidatedTopic,
+  triggerRankingRun,
+  runFullAnalysis,
 };
